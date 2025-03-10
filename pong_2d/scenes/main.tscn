@@ -1,0 +1,11 @@
+[gd_scene load_steps=3 format=3 uid="uid://bpidk1cxqbhqk"]
+
+[ext_resource type="PackedScene" uid="uid://d2oqnbxndw3tv" path="res://scenes/ball.tscn" id="1_pp2oc"]
+[ext_resource type="Script" path="res://scripts/Line2d.cs" id="2_7yng8"]
+
+[node name="Node2D" type="Node2D"]
+
+[node name="Ball" parent="." instance=ExtResource("1_pp2oc")]
+
+[node name="Line2D" type="Line2D" parent="."]
+script = ExtResource("2_7yng8")

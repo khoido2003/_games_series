@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://d2oqnbxndw3tv"]
+
+[ext_resource type="Script" path="res://scripts/Ball.cs" id="1_fyrqa"]
+[ext_resource type="Texture2D" uid="uid://dyb5f35fcjpcs" path="res://PNG/Retina/ball_red_large.png" id="1_pmrld"]
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_hgnka"]
+radius = 47.0
+
+[node name="Ball" type="CharacterBody2D"]
+script = ExtResource("1_fyrqa")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+scale = Vector2(0.734375, 0.734375)
+texture = ExtResource("1_pmrld")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+shape = SubResource("CircleShape2D_hgnka")
