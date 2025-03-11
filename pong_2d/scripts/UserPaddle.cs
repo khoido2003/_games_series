@@ -28,6 +28,10 @@ public partial class UserPaddle : CharacterBody2D
             direction += 1;
         }
 
+    // Move the paddle
+    float moveAmount = direction * speed * (float)delta;
+    Position += new Vector2(0, moveAmount);
+
         Vector2 screenSize = GetViewport().GetVisibleRect().Size;
         float paddleHeight = paddleCollider.Size.Y;
 
@@ -35,8 +39,5 @@ public partial class UserPaddle : CharacterBody2D
         float maxY = screenSize.Y - (paddleHeight / 2);
 
         Position = new Vector2(Position.X, Mathf.Clamp(Position.Y, minY, maxY));
-
-        Velocity = new Vector2(0, direction * speed);
-        MoveAndSlide();
     }
 }

@@ -4,15 +4,17 @@ using Godot;
 public partial class AIPaddle : CharacterBody2D
 {
     [Export]
-    public float Speed = 300;
+    public float speed = 400;
 
     [Export]
     public NodePath BallPath;
-
+    private RectangleShape2D paddleCollider;
     private Ball ball;
 
     public override void _Ready()
     {
+        paddleCollider = (RectangleShape2D)GetNode<CollisionShape2D>("CollisionShape2D").Shape;
+
         // Find the ball
         ball = GetNode<Ball>(BallPath);
 
@@ -46,8 +48,16 @@ public partial class AIPaddle : CharacterBody2D
         {
             direction += 1;
         }
+        // Move the paddle
+        float moveAmount = direction * speed * (float)delta;
+        Position += new Vector2(0, moveAmount);
 
-        Velocity = new Vector2(0, direction * Speed);
-        MoveAndSlide();
+        Vector2 screenSize = GetViewport().GetVisibleRect().Size;
+        float paddleHeight = paddleCollider.Size.Y;
+
+        float minY = paddleHeight / 2;
+        float maxY = screenSize.Y - (paddleHeight / 2);
+
+        Position = new Vector2(Position.X, Mathf.Clamp(Position.Y, minY, maxY));
     }
 }

@@ -3,7 +3,7 @@ using Godot;
 
 public partial class Ball : CharacterBody2D
 {
-    private int speed = 300;
+    private float speed = 300;
     private Vector2 velocity = Vector2.Zero;
 
     private enum NextDirection
@@ -25,21 +25,13 @@ public partial class Ball : CharacterBody2D
         if (collision != null)
         {
             var collider = collision.GetCollider();
-
-            // Make the ball bounce when have collision to something
-            velocity = velocity.Bounce(collision.GetNormal());
-
-            // If it is a paddle, add its velocity to the bounce
-            if (collider is UserPaddle paddle)
+            if (collider is UserPaddle || collider is AIPaddle)
             {
-                Velocity += paddle.Velocity * 0.5f;
+                speed *= 1.1f; // Increase speed
             }
-
-            Velocity = Velocity.Normalized() * (speed * 1.1f);
+            // Make the ball bounce when have collision to something
+            velocity = velocity.Bounce(collision.GetNormal()).Normalized() * speed;
         }
-
-        // Moving the ball automatically
-        Position += velocity * (float)delta;
 
         // Calculate the current screen size
         Vector2 screenSize = GetViewport().GetVisibleRect().Size;
@@ -83,6 +75,8 @@ public partial class Ball : CharacterBody2D
 
     private void ResetBall(NextDirection direction)
     {
+        velocity = Vector2.Zero;
+        speed = 300;
         GetTree().CreateTimer(0.5f).Timeout += () =>
         {
             Vector2 screenSize = GetViewport().GetVisibleRect().Size;
