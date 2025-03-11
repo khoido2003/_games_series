@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://c8mcc3oje60rg"]
+
+[ext_resource type="Script" path="res://scripts/UserPaddle.cs" id="1_i80b5"]
+[ext_resource type="Texture2D" uid="uid://dpi5lj0ckr6ke" path="res://PNG/Retina/block_narrow.png" id="1_tp3ev"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_qhwou"]
+size = Vector2(69, 264)
+
+[node name="UserPaddle" type="CharacterBody2D"]
+script = ExtResource("1_i80b5")
+
+[node name="Sprite2D" type="Sprite2D" parent="."]
+texture = ExtResource("1_tp3ev")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-0.5, 14)
+shape = SubResource("RectangleShape2D_qhwou")

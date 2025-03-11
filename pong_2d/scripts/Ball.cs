@@ -24,10 +24,21 @@ public partial class Ball : CharacterBody2D
 
         if (collision != null)
         {
+            var collider = collision.GetCollider();
+
             // Make the ball bounce when have collision to something
             velocity = velocity.Bounce(collision.GetNormal());
+
+            // If it is a paddle, add its velocity to the bounce
+            if (collider is UserPaddle paddle)
+            {
+                Velocity += paddle.Velocity * 0.5f;
+            }
+
+            Velocity = Velocity.Normalized() * (speed * 1.1f);
         }
 
+        // Moving the ball automatically
         Position += velocity * (float)delta;
 
         // Calculate the current screen size
@@ -41,6 +52,7 @@ public partial class Ball : CharacterBody2D
         if (Position.Y - ballRadius <= 0 || Position.Y + ballRadius >= screenSize.Y)
         {
             velocity.Y = -velocity.Y;
+            Velocity = Velocity.Normalized() * (speed * 1.1f);
         }
 
         if (Position.X - ballRadius <= 0 || Position.X + ballRadius >= screenSize.X)
