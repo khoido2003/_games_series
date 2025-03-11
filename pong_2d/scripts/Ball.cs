@@ -3,6 +3,9 @@ using Godot;
 
 public partial class Ball : CharacterBody2D
 {
+    [Signal]
+    public delegate void UpdateScoreEventHandler(string side);
+
     private float speed = 300;
     private Vector2 velocity = Vector2.Zero;
 
@@ -27,7 +30,7 @@ public partial class Ball : CharacterBody2D
             var collider = collision.GetCollider();
             if (collider is UserPaddle || collider is AIPaddle)
             {
-                speed *= 1.1f; // Increase speed
+                speed *= 1.3f; // Increase speed
             }
             // Make the ball bounce when have collision to something
             velocity = velocity.Bounce(collision.GetNormal()).Normalized() * speed;
@@ -44,7 +47,6 @@ public partial class Ball : CharacterBody2D
         if (Position.Y - ballRadius <= 0 || Position.Y + ballRadius >= screenSize.Y)
         {
             velocity.Y = -velocity.Y;
-            Velocity = Velocity.Normalized() * (speed * 1.1f);
         }
 
         if (Position.X - ballRadius <= 0 || Position.X + ballRadius >= screenSize.X)
@@ -53,10 +55,12 @@ public partial class Ball : CharacterBody2D
 
             if (Position.X - ballRadius <= 0)
             {
+                EmitSignal(SignalName.UpdateScore, "AI");
                 ResetBall(NextDirection.RIGHT);
             }
             else
             {
+                EmitSignal(SignalName.UpdateScore, "Player");
                 ResetBall(NextDirection.LEFT);
             }
         }

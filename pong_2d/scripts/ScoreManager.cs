@@ -1,15 +1,24 @@
-using Godot;
 using System;
+using Godot;
 
 public partial class ScoreManager : Label
 {
-    // Called when the node enters the scene tree for the first time.
-    public override void _Ready()
-    {
-    }
+    private int playerScore = 0;
+    private int aiScore = 0;
 
-    // Called every frame. 'delta' is the elapsed time since the previous frame.
-    public override void _Process(double delta)
+    public void OnBallUpdateScore(string side)
     {
+        if (side == "Player")
+        {
+            playerScore++;
+        }
+        else if (side == "AI")
+        {
+            aiScore++;
+        }
+
+        GD.Print($"Player: {playerScore} | AI: {aiScore}");
+
+        Text = $"{playerScore} | {aiScore}";
     }
 }

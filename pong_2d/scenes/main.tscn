@@ -76,7 +76,7 @@ BallPath = NodePath("../Ball")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="ScoreManager" type="Label" parent="CanvasLayer"]
+[node name="ScoreUI" type="Label" parent="CanvasLayer"]
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
@@ -91,3 +91,5 @@ label_settings = SubResource("LabelSettings_jg6jx")
 horizontal_alignment = 1
 uppercase = true
 script = ExtResource("8_h6fg2")
+
+[connection signal="UpdateScore" from="Ball" to="CanvasLayer/ScoreUI" method="OnBallUpdateScore"]
