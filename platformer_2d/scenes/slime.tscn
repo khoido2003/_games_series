@@ -1,0 +1,65 @@
+[gd_scene load_steps=10 format=3 uid="uid://dvk206wx3lyg0"]
+
+[ext_resource type="Script" path="res://scripts/Slime.cs" id="1_3gj8m"]
+[ext_resource type="Texture2D" uid="uid://cn0ls36rph6pd" path="res://assets/sprites/slime_green.png" id="1_kt85v"]
+[ext_resource type="PackedScene" uid="uid://do68ewrnknwuy" path="res://scenes/kill_zone.tscn" id="2_pk4yk"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_frtbw"]
+atlas = ExtResource("1_kt85v")
+region = Rect2(0, 24, 24, 24)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_aj6m1"]
+atlas = ExtResource("1_kt85v")
+region = Rect2(24, 24, 24, 24)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_e41q1"]
+atlas = ExtResource("1_kt85v")
+region = Rect2(48, 24, 24, 24)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_a3p4k"]
+atlas = ExtResource("1_kt85v")
+region = Rect2(72, 24, 24, 24)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_k63uo"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_frtbw")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_aj6m1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_e41q1")
+}, {
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_a3p4k")
+}],
+"loop": true,
+"name": &"idle",
+"speed": 10.0
+}]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_g4kkm"]
+size = Vector2(9, 8)
+
+[node name="Slime" type="Node2D"]
+script = ExtResource("1_3gj8m")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+sprite_frames = SubResource("SpriteFrames_k63uo")
+animation = &"idle"
+autoplay = "idle"
+frame_progress = 0.845434
+
+[node name="KillZone" parent="." instance=ExtResource("2_pk4yk")]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="KillZone"]
+position = Vector2(0.5, 6)
+shape = SubResource("RectangleShape2D_g4kkm")
+
+[node name="RayCastLeft" type="RayCast2D" parent="."]
+target_position = Vector2(-10, 0)
+
+[node name="RayCastRight" type="RayCast2D" parent="."]
+target_position = Vector2(12, 0)
