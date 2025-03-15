@@ -1,11 +1,14 @@
-[gd_scene load_steps=18 format=4 uid="uid://dgtyovp2pfrxm"]
+[gd_scene load_steps=21 format=4 uid="uid://dgtyovp2pfrxm"]
 
+[ext_resource type="Script" path="res://scripts/GameManager.cs" id="1_4swfl"]
 [ext_resource type="PackedScene" uid="uid://buc57b1sr4kg2" path="res://scenes/player.tscn" id="1_aaoqd"]
 [ext_resource type="Texture2D" uid="uid://jnobkhtu2h6" path="res://assets/sprites/world_tileset.png" id="2_4ln1k"]
 [ext_resource type="PackedScene" uid="uid://i53lhey8n3ra" path="res://scenes/platform.tscn" id="3_n00qv"]
 [ext_resource type="PackedScene" uid="uid://hmb3kmh6xa6a" path="res://scenes/coin.tscn" id="4_fhu2c"]
 [ext_resource type="PackedScene" uid="uid://do68ewrnknwuy" path="res://scenes/kill_zone.tscn" id="5_0se26"]
 [ext_resource type="PackedScene" uid="uid://dvk206wx3lyg0" path="res://scenes/slime.tscn" id="6_srpfq"]
+[ext_resource type="FontFile" uid="uid://cbux5k1w6m8vj" path="res://assets/fonts/PixelOperator8.ttf" id="7_0a1wv"]
+[ext_resource type="FontFile" uid="uid://ce4cygwolf60d" path="res://assets/fonts/PixelOperator8-Bold.ttf" id="9_8h53c"]
 
 [sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_grkep"]
 texture = ExtResource("2_4ln1k")
@@ -383,6 +386,21 @@ _data = {
 
 [node name="Game" type="Node2D"]
 
+[node name="GameManager" type="Node" parent="."]
+unique_name_in_owner = true
+script = ExtResource("1_4swfl")
+
+[node name="ScoreLabel" type="Label" parent="GameManager"]
+z_index = 10
+offset_left = 84.0
+offset_top = 58.0
+offset_right = 233.0
+offset_bottom = 68.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("9_8h53c")
+theme_override_font_sizes/font_size = 8
+text = "You collected 0 coins"
+
 [node name="Player" parent="." instance=ExtResource("1_aaoqd")]
 position = Vector2(197, 193)
 
@@ -443,7 +461,7 @@ position = Vector2(616, 248)
 position = Vector2(600, 169)
 
 [node name="Coin9" parent="Coins" instance=ExtResource("4_fhu2c")]
-position = Vector2(41, 278)
+position = Vector2(249, 298)
 
 [node name="Coin5" parent="Coins" instance=ExtResource("4_fhu2c")]
 position = Vector2(442, 135)
@@ -468,3 +486,39 @@ position = Vector2(361, 282)
 
 [node name="Slime" parent="." instance=ExtResource("6_srpfq")]
 position = Vector2(137, 292)
+
+[node name="Labels" type="Label" parent="."]
+offset_right = 40.0
+offset_bottom = 23.0
+
+[node name="Label" type="Label" parent="Labels"]
+layout_mode = 0
+offset_left = 133.0
+offset_top = 138.0
+offset_right = 232.0
+offset_bottom = 164.0
+theme_override_fonts/font = ExtResource("7_0a1wv")
+theme_override_font_sizes/font_size = 8
+text = "Use arrow keys 
+to move"
+
+[node name="Label2" type="Label" parent="Labels"]
+layout_mode = 0
+offset_left = 347.0
+offset_top = 185.0
+offset_right = 446.0
+offset_bottom = 200.0
+theme_override_fonts/font = ExtResource("7_0a1wv")
+theme_override_font_sizes/font_size = 8
+text = "Space to jump"
+
+[node name="Label3" type="Label" parent="Labels"]
+layout_mode = 0
+offset_left = -2.0
+offset_top = 260.0
+offset_right = 117.0
+offset_bottom = 275.0
+theme_override_fonts/font = ExtResource("7_0a1wv")
+theme_override_font_sizes/font_size = 8
+text = "Water is dangerous
+"
