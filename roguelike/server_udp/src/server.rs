@@ -154,7 +154,7 @@ async fn accept_client(
     }
 
     context.server_socket.send_to(&ack_msg, client).await?;
-    
+
     message::trace(format!("Sent: {}", String::from_utf8_lossy(&ack_msg)));
     Ok(())
 }

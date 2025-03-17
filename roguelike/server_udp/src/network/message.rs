@@ -103,7 +103,7 @@ impl Message {
 
 static TRACE_ENABLED: AtomicBool = AtomicBool::new(false);
 
-pub fn set_trace(enabled: bool ) {
+pub fn set_trace(enabled: bool) {
     TRACE_ENABLED.store(enabled, std::sync::atomic::Ordering::Relaxed);
 }
 
