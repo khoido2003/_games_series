@@ -1,0 +1,2 @@
+core::result::Result<(), alloc::boxed::Box<dyn core::error::Error + core::marker::Send + core::marker::Sync>>
+std::result::Result<(), std::boxed::Box<dyn std::error::Error + std::marker::Send + std::marker::Sync>>

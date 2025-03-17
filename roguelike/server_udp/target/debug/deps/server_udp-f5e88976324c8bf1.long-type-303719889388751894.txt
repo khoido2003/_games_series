@@ -1,0 +1,1 @@
+impl std::future::Future<Output = tokio::sync::MutexGuard<'_, std::collections::HashMap<std::net::SocketAddr, game::player::Player>>>
