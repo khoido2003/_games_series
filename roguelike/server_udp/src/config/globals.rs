@@ -12,3 +12,4 @@ pub mod commands {
 
 pub const DEFAULT_PORT: u16 = 5678;
 pub const CONNECTION_TIMEOUT_SEC: std::time::Duration = std::time::Duration::from_secs(5);
+pub const PING_INTERVAL_MS: std::time::Duration = std::time::Duration::from_millis(20);

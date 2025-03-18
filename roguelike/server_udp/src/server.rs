@@ -1,13 +1,13 @@
 use crate::{
-    config::globals::{
-        self,
-        commands::{CREATE_ROOM, HANDSHAKE},
+    config::globals::{self},
+    game::{
+        player::{Player, PlayerID},
+        room::Room,
     },
-    game::{player::Player, room::Room},
     network::message::{self, Message},
 };
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     error::Error,
     net::SocketAddr,
     sync::{Arc, atomic::AtomicU32},
@@ -16,6 +16,7 @@ use tokio::{
     self,
     net::UdpSocket,
     sync::{Mutex, mpsc},
+    time::interval,
 };
 
 //////////////////////////////////////////////////////////////////
@@ -31,22 +32,52 @@ struct BroadcastMessage {
 }
 
 struct ServerContext {
-    player_id_counter: AtomicU32,
     server_socket: UdpSocket,
     broadcast_tx: ChannelSender,
     rooms: HashMap<u32, Room>,
     players: Mutex<HashMap<SocketAddr, Player>>,
+    next_id: AtomicU32,
+    active_ids: Mutex<HashSet<u32>>,
 }
 
 impl ServerContext {
     fn new(server_socket: UdpSocket, broadcast_tx: ChannelSender) -> ServerContext {
         Self {
-            player_id_counter: AtomicU32::new(1),
+            next_id: AtomicU32::new(1),
+            active_ids: Mutex::new(HashSet::new()),
             server_socket,
             broadcast_tx,
             rooms: HashMap::new(),
             players: Mutex::new(HashMap::new()),
         }
+    }
+
+    async fn assign_player_id(&self) -> u32 {
+        let mut active_ids = self.active_ids.lock().await;
+
+        // Take out the current id
+        let mut id = self.next_id.load(std::sync::atomic::Ordering::SeqCst);
+
+        while active_ids.contains(&id) {
+            // Cirle back to 1 if hits U32::Max
+            id = id.wrapping_add(1);
+            if id == 0 {
+                id = 1;
+            }
+        }
+
+        active_ids.insert(id);
+
+        // Store the next id for next user
+        self.next_id
+            .store(id.wrapping_add(1), std::sync::atomic::Ordering::SeqCst);
+        id
+    }
+
+    async fn free_player_id(&self, id: u32) {
+        let mut active_ids = self.active_ids.lock().await;
+        println!("ID: {} is freed", &id);
+        active_ids.remove(&id);
     }
 }
 
@@ -64,6 +95,9 @@ pub async fn start_server(port: u16) -> ServerSessionResult {
 
         tokio::spawn(listen_handler(context.clone()));
         tokio::spawn(broadcast_handler(context.clone(), broadcast_rx));
+
+        // Healthcheck server
+        tokio::spawn(ping_sender(context.clone()));
 
         Ok(()) as ServerSessionResult
     })
@@ -124,11 +158,26 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
     println!("Command received: {} (0x{:02x})", command, command);
 
     match Message::deserialize(&packet) {
-        Ok(Message::Handshake) => {}
+        Ok(Message::Handshake) => {
+            if let Err(e) = accept_client(context.clone(), client).await {
+                eprintln!("Failed to accept client {}: {}", client, e);
+            }
+        }
+        Ok(Message::Leave(player_id)) => {
+            if let Err(e) = drop_player(context.clone(), client, player_id).await {
+                eprintln!("Failed to drop player {} from {}: {}", player_id, client, e);
+            }
+        }
 
-        Ok(Message::Leave(player_id)) => {}
+        _ => {
+            println!("Not a command");
 
-        _ => (),
+            let mes = format!("Not a command: {}", String::from_utf8_lossy(&packet));
+
+            if let Err(e) = context.server_socket.send_to(mes.as_bytes(), client).await {
+                eprintln!("Can not send back the message to client {}\n {}", client, e);
+            }
+        }
     }
 }
 
@@ -142,19 +191,51 @@ async fn accept_client(
     if let Some(existing_player) = players.get(&client) {
         ack_msg = Message::Ack(existing_player.id).serialize();
     } else {
-        let new_player = Player::new(
-            context
-                .player_id_counter
-                .fetch_add(1, std::sync::atomic::Ordering::SeqCst),
-        );
-
+        let player_id = context.assign_player_id().await;
+        let new_player = Player::new(player_id);
         players.insert(client, new_player);
         println!("Player {} joined the server", new_player.id);
+
         ack_msg = Message::Ack(new_player.id).serialize();
     }
 
+    println!("Sending Ack to {}", client);
     context.server_socket.send_to(&ack_msg, client).await?;
 
-    message::trace(format!("Sent: {}", String::from_utf8_lossy(&ack_msg)));
+    let sent_message = Message::deserialize(&ack_msg).unwrap();
+    message::trace(format!("Sent: {:?}", sent_message));
     Ok(())
+}
+
+async fn drop_player(
+    context: Arc<ServerContext>,
+    client: SocketAddr,
+    player_id: PlayerID,
+) -> Result<(), Box<dyn Error + Sync + Send>> {
+    let mut players = context.players.lock().await;
+
+    if let Some(player) = players.remove(&client) {
+        println!("Player {player_id} left the server");
+
+        context.broadcast_tx.send(BroadcastMessage {
+            msg: Message::Leave(player_id).serialize(),
+            excluded_client: Some(client),
+        })?;
+        context.free_player_id(player.id).await;
+    }
+
+    Ok(())
+}
+
+async fn ping_sender(context: Arc<ServerContext>) {
+    let mut interval = tokio::time::interval(globals::PING_INTERVAL_MS);
+
+    // Sending ping to healthcheck server every 20s
+    loop {
+        interval.tick().await;
+        let _ = context.broadcast_tx.send(BroadcastMessage {
+            msg: Message::Ping.serialize(),
+            excluded_client: None,
+        });
+    }
 }

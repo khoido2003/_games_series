@@ -1,4 +1,4 @@
-use std::error::Error;
+use std::{ error::Error};
 
 use clap::Parser;
 use config::globals;
@@ -22,15 +22,11 @@ struct Args {
         help = "PORT NUMBER used for server init")]
     port: u16,
 
-    #[arg(
-        short,
-        long,
-        require_equals = true,
-        help = "Enable tracing of UDP messages on console log."
-    )]
+    #[arg(short, long, help = "Enable tracing of UDP messages on console log.")]
     trace: bool,
 }
 
+// Run server: cargo run -- --port=8082 --trace
 fn main() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
 
@@ -49,6 +45,21 @@ fn main() -> Result<(), Box<dyn Error>> {
             println!("Tokio runtime successfully created");
             run_time.block_on(async {
                 // Start server here
+                match server::start_server(args.port).await {
+                    Ok(_) => {
+                        println!("Server started successfully on port {}. Waiting for CTRL + C to shutdown", args.port);
+
+                        match tokio::signal::ctrl_c().await {
+                            Ok(_)=> println!("\n CTRL + C interrupt received. Shutting down server gracefully..."),
+
+                            Err(e) => eprintln!("Failed to listen for CTRL + C event: {}", e),
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("Server failed to start: {}", e);
+                        std::process::exit(1);
+                    }
+                }
             })
         }
         Err(err) => {
