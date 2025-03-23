@@ -11,6 +11,7 @@ use std::{
     error::Error,
     net::SocketAddr,
     sync::{Arc, atomic::AtomicU32},
+    time::{Duration, Instant},
 };
 use tokio::{
     self,
@@ -99,6 +100,9 @@ pub async fn start_server(port: u16) -> ServerSessionResult {
         // Healthcheck server
         tokio::spawn(ping_sender(context.clone()));
 
+        // Cleanup inactive player
+        tokio::spawn(cleanup_inactive(context.clone()));
+
         Ok(()) as ServerSessionResult
     })
     .await
@@ -115,6 +119,7 @@ pub async fn start_server(port: u16) -> ServerSessionResult {
 async fn broadcast_handler(context: Arc<ServerContext>, mut broadcast_rx: ChannelReceiver) {
     while let Some(message) = broadcast_rx.recv().await {
         let players = context.players.lock().await;
+
         for (addr, _) in players.iter() {
             if message.excluded_client != Some(*addr) {
                 if let Err(e) = context.server_socket.send_to(&message.msg, addr).await {
@@ -143,6 +148,11 @@ async fn listen_handler(context: Arc<ServerContext>) {
                 }
             }
 
+            // This error happend when client close connection but server keep sending
+            // ping to that client and client machine send back the error
+            Err(e) if e.raw_os_error() == Some(10054) => {
+                println!("client disconnected (os error 10054), continue...")
+            }
             Err(e) => {
                 eprint!("Error receiving UDP packet: {e}");
             }
@@ -158,9 +168,21 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
     println!("Command received: {} (0x{:02x})", command, command);
 
     match Message::deserialize(&packet) {
-        Ok(Message::Handshake) => {
-            if let Err(e) = accept_client(context.clone(), client).await {
-                eprintln!("Failed to accept client {}: {}", client, e);
+        Ok(Message::Ping) => {
+            let mut players = context.players.lock().await;
+            if let Some(player) = players.get_mut(&client) {
+                player.last_active = Instant::now();
+
+                println!("Received PONG from {}", client);
+            }
+        }
+
+        Ok(Message::Handshake(player_name)) => {
+            if let Err(e) = accept_client(context.clone(), client, &player_name).await {
+                eprintln!(
+                    "Failed to accept client {}: {}: {}",
+                    client, &player_name, e
+                );
             }
         }
         Ok(Message::Leave(player_id)) => {
@@ -170,9 +192,14 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
         }
 
         _ => {
-            println!("Not a command");
+            println!("Not a command {}", String::from_utf8_lossy(&packet));
 
-            let mes = format!("Not a command: {}", String::from_utf8_lossy(&packet));
+            // Send the message back to the client to inform wrong format
+            let mes = format!(
+                "Not a command: {}\npacket: {:?}",
+                String::from_utf8_lossy(&packet),
+                &packet
+            );
 
             if let Err(e) = context.server_socket.send_to(mes.as_bytes(), client).await {
                 eprintln!("Can not send back the message to client {}\n {}", client, e);
@@ -184,6 +211,7 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
 async fn accept_client(
     context: Arc<ServerContext>,
     client: SocketAddr,
+    player_name: &str,
 ) -> Result<(), Box<dyn Error + Send + Sync>> {
     let mut players = context.players.lock().await;
     let ack_msg: Vec<u8>;
@@ -193,10 +221,10 @@ async fn accept_client(
     } else {
         let player_id = context.assign_player_id().await;
         let new_player = Player::new(player_id);
-        players.insert(client, new_player);
-        println!("Player {} joined the server", new_player.id);
+        println!("Player {}: {player_name} joined the server", &new_player.id);
 
-        ack_msg = Message::Ack(new_player.id).serialize();
+        players.insert(client, new_player);
+        ack_msg = Message::Ack(player_id).serialize();
     }
 
     println!("Sending Ack to {}", client);
@@ -227,15 +255,45 @@ async fn drop_player(
     Ok(())
 }
 
+/// Send ping to healthcheck
 async fn ping_sender(context: Arc<ServerContext>) {
     let mut interval = tokio::time::interval(globals::PING_INTERVAL_MS);
 
     // Sending ping to healthcheck server every 20s
     loop {
+        println!("SENT PING");
         interval.tick().await;
         let _ = context.broadcast_tx.send(BroadcastMessage {
             msg: Message::Ping.serialize(),
             excluded_client: None,
         });
+    }
+}
+
+/// Cleanup inactive player after 30s
+async fn cleanup_inactive(context: Arc<ServerContext>) {
+    let mut interval = tokio::time::interval(Duration::from_secs(10));
+
+    let inactivity_timeout = Duration::from_secs(30);
+
+    loop {
+        interval.tick().await;
+
+        let mut players = context.players.lock().await;
+        let mut to_remove = Vec::new();
+
+        for (addr, player) in players.iter() {
+            if Instant::now().duration_since(player.last_active) > inactivity_timeout {
+                println!("Removing inactive client: {} (ID: {})", addr, player.id);
+
+                to_remove.push(*addr);
+            }
+        }
+
+        for addr in to_remove {
+            if let Some(player) = players.remove(&addr) {
+                context.free_player_id(player.id).await;
+            }
+        }
     }
 }

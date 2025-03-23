@@ -1,0 +1,98 @@
+[gd_scene load_steps=6 format=3 uid="uid://dr4s52dyue005"]
+
+[ext_resource type="Script" path="res://scripts/Welcome.cs" id="1_0h4eq"]
+
+[sub_resource type="Theme" id="Theme_s15v7"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_njvcl"]
+bg_color = Color(0.236334, 0.236334, 0.236334, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ys2bw"]
+bg_color = Color(0.441462, 0.677413, 0.265372, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_roqfc"]
+bg_color = Color(0.909804, 0.427451, 0.427451, 1)
+
+[node name="Welcome" type="Control"]
+layout_mode = 3
+anchors_preset = 10
+anchor_right = 1.0
+offset_right = 4.0
+offset_bottom = 654.0
+grow_horizontal = 2
+theme = SubResource("Theme_s15v7")
+script = ExtResource("1_0h4eq")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.506
+anchor_top = 0.365
+anchor_right = 0.506
+anchor_bottom = 0.365
+offset_left = -129.936
+offset_top = -22.71
+offset_right = 114.064
+offset_bottom = 22.29
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 28
+text = "Enter your name:"
+
+[node name="LineEdit" type="LineEdit" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.505
+anchor_top = 0.5
+anchor_right = 0.505
+anchor_bottom = 0.5
+offset_left = -245.78
+offset_top = -39.0
+offset_right = 246.22
+offset_bottom = 26.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_njvcl")
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.505
+anchor_top = 0.634
+anchor_right = 0.505
+anchor_bottom = 0.634
+offset_left = -82.78
+offset_top = -26.636
+offset_right = 83.22
+offset_bottom = 26.364
+grow_horizontal = 2
+grow_vertical = 2
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 32
+theme_override_styles/hover = SubResource("StyleBoxFlat_ys2bw")
+theme_override_styles/normal = SubResource("StyleBoxFlat_roqfc")
+text = "Connect"
+
+[node name="Status" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 524.0
+offset_top = -200.0
+offset_right = -499.0
+offset_bottom = -177.0
+grow_horizontal = 2
+grow_vertical = 0
+text = "Status: Waiting"

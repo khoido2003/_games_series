@@ -1,12 +1,12 @@
-use std::{fs::Permissions, io, sync::atomic::AtomicBool};
+use std::{io, sync::atomic::AtomicBool, u16, usize};
 
 use cgmath::num_traits::ToBytes;
 
 use crate::{
     config::globals::commands::{ACK, CREATE_ROOM, HANDSHAKE, LEAVE, PING, PLAYER_INPUT},
     game::{
-        player::{self, PlayerID},
-        room::{Room, RoomId},
+        player::{PlayerID, PlayerName},
+        room::RoomId,
     },
 };
 
@@ -22,7 +22,7 @@ pub enum Message {
     Ping,
 
     /// Handshake on connect
-    Handshake,
+    Handshake(PlayerName),
 
     /// Server acknowledge handshake with PlayerId
     Ack(PlayerID),
@@ -46,7 +46,20 @@ impl Message {
     pub fn serialize(&self) -> Vec<u8> {
         match self {
             Message::Ping => vec![PING],
-            Message::Handshake => vec![HANDSHAKE],
+            Message::Handshake(player_name) => {
+                let mut packet = vec![HANDSHAKE];
+                let name_bytes = player_name.as_bytes();
+                let length = name_bytes.len() as u16;
+
+                // Add name length
+                packet.extend_from_slice(&length.to_le_bytes());
+
+                // Add name
+                packet.extend_from_slice(name_bytes);
+
+                packet
+            }
+
             Message::Ack(player_id) => {
                 let mut packet = vec![ACK];
                 packet.extend_from_slice(&player_id.to_le_bytes());
@@ -72,9 +85,27 @@ impl Message {
             return Err(io::Error::new(io::ErrorKind::InvalidData, "Empty packet"));
         }
 
+        println!("Deserializing packet: {:?}", packet);
         match packet[0] {
             PING => Ok(Message::Ping),
-            HANDSHAKE => Ok(Message::Handshake),
+
+            HANDSHAKE if packet.len() >= 3 => {
+                // Read the length of the username string
+                let length = u16::from_le_bytes([packet[1], packet[2]]) as usize;
+
+                if packet.len() < 3 + length {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Packet too short! Missing name",
+                    ));
+                }
+
+                let name_bytes = &packet[3..3 + length];
+                let player_name = String::from_utf8(name_bytes.to_vec())
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+                Ok(Message::Handshake(player_name))
+            }
 
             ACK => {
                 let player_id = u32::from_le_bytes([packet[1], packet[2], packet[3], packet[4]]);
