@@ -1,4 +1,4 @@
-[gd_scene load_steps=6 format=3 uid="uid://dr4s52dyue005"]
+[gd_scene load_steps=9 format=3 uid="uid://dr4s52dyue005"]
 
 [ext_resource type="Script" path="res://scripts/Welcome.cs" id="1_0h4eq"]
 
@@ -7,11 +7,20 @@
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_njvcl"]
 bg_color = Color(0.236334, 0.236334, 0.236334, 1)
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_pl8hc"]
+bg_color = Color(0.246502, 0.700119, 0.43008, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_gxigd"]
+bg_color = Color(0.0911214, 0.0911215, 0.0911214, 1)
+
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ys2bw"]
 bg_color = Color(0.441462, 0.677413, 0.265372, 1)
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_roqfc"]
-bg_color = Color(0.909804, 0.427451, 0.427451, 1)
+bg_color = Color(1, 1, 1, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_6k4wi"]
+bg_color = Color(0.983784, 0.392105, 0.434281, 1)
 
 [node name="Welcome" type="Control"]
 layout_mode = 3
@@ -64,6 +73,16 @@ grow_vertical = 2
 theme_override_font_sizes/font_size = 28
 theme_override_styles/normal = SubResource("StyleBoxFlat_njvcl")
 
+[node name="GoToLobby" type="Button" parent="."]
+layout_mode = 0
+offset_left = 474.0
+offset_top = 388.0
+offset_right = 696.0
+offset_bottom = 441.0
+theme_override_font_sizes/font_size = 28
+theme_override_styles/normal = SubResource("StyleBoxFlat_pl8hc")
+text = "Go To Lobby"
+
 [node name="Button" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = -1
@@ -78,7 +97,10 @@ offset_bottom = 26.364
 grow_horizontal = 2
 grow_vertical = 2
 mouse_default_cursor_shape = 2
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 1)
+theme_override_colors/font_color = Color(0, 0, 0, 1)
 theme_override_font_sizes/font_size = 32
+theme_override_styles/disabled = SubResource("StyleBoxFlat_gxigd")
 theme_override_styles/hover = SubResource("StyleBoxFlat_ys2bw")
 theme_override_styles/normal = SubResource("StyleBoxFlat_roqfc")
 text = "Connect"
@@ -89,10 +111,24 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 524.0
-offset_top = -200.0
-offset_right = -499.0
-offset_bottom = -177.0
+offset_left = 452.0
+offset_top = -643.0
+offset_right = -445.0
+offset_bottom = -599.0
 grow_horizontal = 2
 grow_vertical = 0
-text = "Status: Waiting"
+theme_override_font_sizes/font_size = 24
+text = "Status: Not Connected"
+
+[node name="Disconnect" type="Button" parent="."]
+layout_mode = 0
+offset_left = 970.0
+offset_top = 602.0
+offset_right = 1140.0
+offset_bottom = 639.0
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 1)
+theme_override_colors/font_color = Color(0.9239, 0.9239, 0.9239, 1)
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_6k4wi")
+text = "Disconnect
+"

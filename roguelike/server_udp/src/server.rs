@@ -17,7 +17,6 @@ use tokio::{
     self,
     net::UdpSocket,
     sync::{Mutex, mpsc},
-    time::interval,
 };
 
 //////////////////////////////////////////////////////////////////
@@ -150,6 +149,8 @@ async fn listen_handler(context: Arc<ServerContext>) {
 
             // This error happend when client close connection but server keep sending
             // ping to that client and client machine send back the error
+            // To fix this, the server will have a cleanup method to check inactive
+            // user then remove them so the error will no longer happend
             Err(e) if e.raw_os_error() == Some(10054) => {
                 println!("client disconnected (os error 10054), continue...")
             }
@@ -186,6 +187,7 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
             }
         }
         Ok(Message::Leave(player_id)) => {
+            println!("Drop player {}", player_id);
             if let Err(e) = drop_player(context.clone(), client, player_id).await {
                 eprintln!("Failed to drop player {} from {}: {}", player_id, client, e);
             }
@@ -232,6 +234,9 @@ async fn accept_client(
 
     let sent_message = Message::deserialize(&ack_msg).unwrap();
     message::trace(format!("Sent: {:?}", sent_message));
+
+
+
     Ok(())
 }
 
