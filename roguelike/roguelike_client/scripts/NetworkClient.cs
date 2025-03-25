@@ -21,11 +21,9 @@ public partial class NetworkClient : Node
     private const int CLIENT_PORT = 123456;
 
     private string _username = "";
-    private NetworkManagement _networkManagement;
 
     public override void _Ready()
     {
-        _networkManagement = GetParent<NetworkManagement>();
         Error err = _udp.ConnectToHost(SERVER_IP, SERVER_PORT);
 
         if (err != Error.Ok)
@@ -88,10 +86,10 @@ public partial class NetworkClient : Node
                         int playerId = BitConverter.ToInt32(packet, 1);
                         GD.Print($"ACK mes received - PlayerId is {playerId}");
 
-                        _networkManagement.UpdateConnectionStatus(true, playerId);
+                        NetworkManagement.Instance.UpdateConnectionStatus(true, playerId);
 
                         GD.Print(
-                            $"Emitting ConnectionStatusChanged: Connected={_networkManagement.Connected}, PlayerId={_networkManagement.PlayerId}"
+                            $"Emitting ConnectionStatusChanged: Connected={ClientStateManager.Instance.LocalPlayer.Connected}, PlayerId={ClientStateManager.Instance.LocalPlayer.PlayerId}"
                         );
                     }
                     break;
@@ -120,19 +118,21 @@ public partial class NetworkClient : Node
 
     public void DisconnectServer()
     {
-        if (_networkManagement.Connected)
+        if (ClientStateManager.Instance.LocalPlayer.Connected)
         {
             byte[] leave = new byte[5];
             leave[0] = (byte)MessageType.LEAVE;
-            BitConverter.GetBytes(_networkManagement.PlayerId).CopyTo(leave, 1);
+            BitConverter
+                .GetBytes(ClientStateManager.Instance.LocalPlayer.PlayerId)
+                .CopyTo(leave, 1);
 
             _udp.PutPacket(leave);
             GD.Print($"Sent LEAVE message");
-            
+
             // Delay the server to send the message before close udp
             OS.DelayMsec(100);
         }
-        _networkManagement.UpdateConnectionStatus(false, -1);
+        NetworkManagement.Instance.UpdateConnectionStatus(false, -1);
         _udp.Close();
     }
 }

@@ -1,4 +1,4 @@
-use std::{io, sync::atomic::AtomicBool, u16, usize};
+use std::{io, sync::atomic::AtomicBool};
 
 use cgmath::num_traits::ToBytes;
 

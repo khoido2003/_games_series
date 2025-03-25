@@ -8,7 +8,6 @@ public partial class Welcome : Control
     private Label _status;
     private Button _disconnect;
     private Button _goToLobby;
-    private NetworkManagement _networkManagement;
 
     public override void _Ready()
     {
@@ -16,7 +15,6 @@ public partial class Welcome : Control
         _connectBtn = GetNode<Button>("Button");
         _status = GetNode<Label>("Status");
         _disconnect = GetNode<Button>("Disconnect");
-        _networkManagement = GetNode<NetworkManagement>("%NetworkManagement");
 
         _goToLobby = GetNode<Button>("GoToLobby");
         _goToLobby.Hide();
@@ -24,7 +22,7 @@ public partial class Welcome : Control
         _connectBtn.Pressed += OnConnectedButtonPressed;
         _disconnect.Pressed += OnDisconnectedButtonPressed;
 
-        _networkManagement.ConnectionStatusChanged += OnConnectionStatusChanged;
+        NetworkManagement.Instance.ConnectionStatusChanged += OnConnectionStatusChanged;
 
         UpdateUI(false, -1);
     }
@@ -39,8 +37,7 @@ public partial class Welcome : Control
         else
         {
             _status.Text = "Status: Connecting...";
-            _networkManagement.ConnectToServer(username);
-
+            NetworkManagement.Instance.ConnectToServer(username);
         }
     }
 
@@ -48,14 +45,17 @@ public partial class Welcome : Control
     {
         GD.Print("Disconnect server....");
         _status.Text = "Status: Disconnecting...";
-        _networkManagement.DisconnectToServer();
-        UpdateUI(_networkManagement.Connected, _networkManagement.PlayerId);
+        NetworkManagement.Instance.DisconnectToServer();
+        UpdateUI(
+            ClientStateManager.Instance.LocalPlayer.Connected,
+            ClientStateManager.Instance.LocalPlayer.PlayerId
+        );
     }
 
     private void OnGoToLobbyPressed()
     {
         GD.Print("Going to lobby...");
-        /*GetTree().ChangeSceneToFile("res://Scenes/Lobby.tscn"); // Adjust path*/
+        GetTree().ChangeSceneToFile("res://scenes/lobby.tscn");
     }
 
     private void OnConnectionStatusChanged(bool connected, int playerId)

@@ -8,10 +8,9 @@ public partial class NetworkManagement : Node
     public delegate void ConnectionStatusChangedEventHandler(bool connected, int playerId);
 
     private NetworkClient _networkClient;
+    private string _pendingUsername = "";
 
-    public string Username { get; private set; } = "";
-    public bool Connected { get; private set; } = false;
-    public int PlayerId { get; private set; } = -1;
+    public static NetworkManagement Instance { get; private set; }
 
     public override void _Ready()
     {
@@ -19,26 +18,30 @@ public partial class NetworkManagement : Node
         _networkClient = new NetworkClient();
         AddChild(_networkClient);
 
+        // Set the singleton instance
+        Instance = this;
         GD.Print("Network manager initialized");
     }
 
     public void UpdateConnectionStatus(bool connected, int playerId)
     {
-        Connected = connected;
-        PlayerId = playerId;
-        GD.Print($"Emitting ConnectionStatusChanged: Connected={Connected}, PlayerId={PlayerId}");
-        EmitSignal(SignalName.ConnectionStatusChanged, Connected, PlayerId);
+        ClientStateManager.Instance.UpdateConnectionStatus(
+            connected,
+            playerId,
+            connected ? _pendingUsername : "unknown name"
+        );
+        GD.Print($"Emitting ConnectionStatusChanged: Connected={connected}, PlayerId={playerId}");
+        EmitSignal(SignalName.ConnectionStatusChanged, connected, playerId);
     }
 
     public void ConnectToServer(string username)
     {
-        Username = username;
+        _pendingUsername = username;
         _networkClient.ConnectToServer(username);
     }
 
     public void DisconnectToServer()
     {
-        Connected = false;
         _networkClient.DisconnectServer();
     }
 

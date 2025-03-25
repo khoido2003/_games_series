@@ -1,0 +1,186 @@
+[gd_scene load_steps=3 format=3 uid="uid://bpj4etl6piqjx"]
+
+[ext_resource type="Script" path="res://scripts/Lobby.cs" id="1_tbifs"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_fex2a"]
+bg_color = Color(0.307412, 0.684161, 0.522604, 1)
+
+[node name="Lobby" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_tbifs")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Username" type="Label" parent="."]
+layout_mode = 2
+offset_left = 496.0
+offset_top = 61.0
+offset_right = 669.0
+offset_bottom = 95.0
+size_flags_horizontal = 4
+theme_override_font_sizes/font_size = 24
+text = "Welcome, User"
+
+[node name="CreateBtn" type="Button" parent="."]
+z_index = 5
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.506
+anchor_top = 0.238
+anchor_right = 0.506
+anchor_bottom = 0.238
+offset_left = -127.912
+offset_top = -23.224
+offset_right = 127.088
+offset_bottom = 23.776
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
+text = "Create Room"
+
+[node name="JoinBtn" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.509
+anchor_top = 0.345
+anchor_right = 0.509
+anchor_bottom = 0.345
+offset_left = -127.368
+offset_top = -23.56
+offset_right = 127.632
+offset_bottom = 23.44
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
+text = "Join Room"
+
+[node name="Id" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -22.5
+offset_top = -11.5
+offset_right = 22.5
+offset_bottom = 11.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
+text = "(ID: 0)"
+horizontal_alignment = 1
+
+[node name="Label" type="Label" parent="."]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.504
+anchor_top = 0.92
+anchor_right = 0.504
+anchor_bottom = 0.92
+offset_left = -255.608
+offset_top = -17.16
+offset_right = 255.392
+offset_bottom = 16.84
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_font_sizes/font_size = 24
+text = "Status: Connected
+"
+horizontal_alignment = 1
+
+[node name="JoinRoom" type="Window" parent="."]
+auto_translate_mode = 1
+mode = 3
+initial_position = 1
+size = Vector2i(500, 400)
+visible = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="JoinRoom"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 120.0
+grow_horizontal = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="JoinRoom/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Join room
+"
+
+[node name="RoomName" type="LineEdit" parent="JoinRoom/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+placeholder_text = "  Room's name"
+
+[node name="Password" type="LineEdit" parent="JoinRoom/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+placeholder_text = "  Password"
+
+[node name="Button" type="Button" parent="JoinRoom/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_fex2a")
+text = "Join room"
+
+[node name="JoinStatus" type="Label" parent="JoinRoom/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Status: Waiting"
+
+[node name="CreateRoom" type="Window" parent="."]
+auto_translate_mode = 1
+mode = 3
+initial_position = 1
+size = Vector2i(500, 400)
+visible = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CreateRoom"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 120.0
+grow_horizontal = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="CreateRoom/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Create new room
+"
+
+[node name="RoomName" type="LineEdit" parent="CreateRoom/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+placeholder_text = "  Room's name"
+
+[node name="Password" type="LineEdit" parent="CreateRoom/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+placeholder_text = "  Password"
+
+[node name="Button" type="Button" parent="CreateRoom/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+theme_override_styles/normal = SubResource("StyleBoxFlat_fex2a")
+text = "Create room"
+
+[node name="CreateStatus" type="Label" parent="CreateRoom/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Status: Waiting"

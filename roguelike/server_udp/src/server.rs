@@ -235,8 +235,6 @@ async fn accept_client(
     let sent_message = Message::deserialize(&ack_msg).unwrap();
     message::trace(format!("Sent: {:?}", sent_message));
 
-
-
     Ok(())
 }
 
@@ -266,7 +264,7 @@ async fn ping_sender(context: Arc<ServerContext>) {
 
     // Sending ping to healthcheck server every 20s
     loop {
-        println!("SENT PING");
+        // println!("SENT PING");
         interval.tick().await;
         let _ = context.broadcast_tx.send(BroadcastMessage {
             msg: Message::Ping.serialize(),
