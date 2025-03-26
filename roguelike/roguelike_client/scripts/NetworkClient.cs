@@ -4,14 +4,6 @@ using Godot;
 
 public partial class NetworkClient : Node
 {
-    public enum MessageType : byte
-    {
-        PING = 0,
-        HANDSHAKE = 1,
-        ACK = 2,
-        LEAVE = 3,
-    }
-
     public delegate void PacketHandler(byte[] packet);
     public event PacketHandler OnPacketReceived;
 
@@ -35,33 +27,6 @@ public partial class NetworkClient : Node
         GD.Print($"Client bound to {CLIENT_PORT}, connect to {SERVER_IP}:{SERVER_PORT}");
     }
 
-    public override void _ExitTree()
-    {
-        DisconnectServer();
-    }
-
-    private void SendHandshake()
-    {
-        // Send command + name length + name
-        byte[] usernameBytes = Encoding.UTF8.GetBytes(_username);
-        byte[] packet = new byte[3 + usernameBytes.Length];
-        packet[0] = 1;
-
-        ushort length = (ushort)usernameBytes.Length;
-        BitConverter.GetBytes(length).CopyTo(packet, 1);
-
-        Array.Copy(usernameBytes, 0, packet, 3, usernameBytes.Length);
-        _udp.PutPacket(packet);
-
-        GD.Print($"Sent Handshake with username: {_username} (length: {length})");
-    }
-
-    public void ConnectToServer(string username)
-    {
-        _username = username;
-        SendHandshake();
-    }
-
     public override void _Process(double delta)
     {
         if (_udp.GetAvailablePacketCount() > 0)
@@ -69,18 +34,18 @@ public partial class NetworkClient : Node
             byte[] packet = _udp.GetPacket();
 
             // Read the message sent back from the server then send PING back to the server to make sure the server does not remove this client from the server
-            switch ((MessageType)packet[0])
+            switch ((Global)packet[0])
             {
-                case MessageType.PING:
+                case Global.PING:
                     GD.Print("Received PING from the server");
 
-                    byte[] pong = new byte[] { (byte)MessageType.PING };
+                    byte[] pong = new byte[] { (byte)Global.PING };
                     _udp.PutPacket(pong);
 
                     GD.Print("SEND PONG message back to the server");
                     break;
 
-                case MessageType.ACK:
+                case Global.ACK:
                     if (packet.Length >= 5)
                     {
                         int playerId = BitConverter.ToInt32(packet, 1);
@@ -94,7 +59,7 @@ public partial class NetworkClient : Node
                     }
                     break;
 
-                case MessageType.LEAVE:
+                case Global.LEAVE:
                     if (packet.Length >= 5)
                     {
                         int playerId = BitConverter.ToInt32(packet, 1);
@@ -102,8 +67,16 @@ public partial class NetworkClient : Node
                     }
                     break;
 
+                case Global.CREATE_ROOM:
+                    if (packet.Length >= 5)
+                    {
+                        int roomId = BitConverter.ToInt32(packet, 1);
+                        GD.Print($"RoomId {roomId} created");
+                    }
+                    break;
+
                 default:
-                    GD.Print($"Unknown MessageType: {packet[0]}");
+                    GD.Print($"Unknown Global: {packet[0]}");
                     break;
             }
 
@@ -116,23 +89,8 @@ public partial class NetworkClient : Node
         _udp.PutPacket(packet);
     }
 
-    public void DisconnectServer()
+    public void CloseUdp()
     {
-        if (ClientStateManager.Instance.LocalPlayer.Connected)
-        {
-            byte[] leave = new byte[5];
-            leave[0] = (byte)MessageType.LEAVE;
-            BitConverter
-                .GetBytes(ClientStateManager.Instance.LocalPlayer.PlayerId)
-                .CopyTo(leave, 1);
-
-            _udp.PutPacket(leave);
-            GD.Print($"Sent LEAVE message");
-
-            // Delay the server to send the message before close udp
-            OS.DelayMsec(100);
-        }
-        NetworkManagement.Instance.UpdateConnectionStatus(false, -1);
         _udp.Close();
     }
 }

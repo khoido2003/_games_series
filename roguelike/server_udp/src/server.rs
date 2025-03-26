@@ -1,8 +1,8 @@
 use crate::{
-    config::globals::{self},
+    config::globals::{self, commands::CREATE_ROOM},
     game::{
         player::{Player, PlayerID},
-        room::Room,
+        room::{Room, RoomId},
     },
     network::message::{self, Message},
 };
@@ -34,31 +34,35 @@ struct BroadcastMessage {
 struct ServerContext {
     server_socket: UdpSocket,
     broadcast_tx: ChannelSender,
-    rooms: HashMap<u32, Room>,
-    players: Mutex<HashMap<SocketAddr, Player>>,
-    next_id: AtomicU32,
-    active_ids: Mutex<HashSet<u32>>,
+    rooms: Mutex<HashMap<RoomId, Room>>,
+    players: Mutex<HashMap<SocketAddr, Arc<Mutex<Player>>>>,
+    next_user_id: AtomicU32,
+    next_room_id: AtomicU32,
+    active_player_ids: Mutex<HashSet<u32>>,
+    active_room_ids: Mutex<HashSet<u32>>,
 }
 
 impl ServerContext {
     fn new(server_socket: UdpSocket, broadcast_tx: ChannelSender) -> ServerContext {
         Self {
-            next_id: AtomicU32::new(1),
-            active_ids: Mutex::new(HashSet::new()),
+            next_room_id: AtomicU32::new(1),
+            next_user_id: AtomicU32::new(1),
+            active_player_ids: Mutex::new(HashSet::new()),
+            active_room_ids: Mutex::new(HashSet::new()),
             server_socket,
             broadcast_tx,
-            rooms: HashMap::new(),
+            rooms: Mutex::new(HashMap::new()),
             players: Mutex::new(HashMap::new()),
         }
     }
 
     async fn assign_player_id(&self) -> u32 {
-        let mut active_ids = self.active_ids.lock().await;
+        let mut active_player_ids = self.active_player_ids.lock().await;
 
         // Take out the current id
-        let mut id = self.next_id.load(std::sync::atomic::Ordering::SeqCst);
+        let mut id = self.next_user_id.load(std::sync::atomic::Ordering::SeqCst);
 
-        while active_ids.contains(&id) {
+        while active_player_ids.contains(&id) {
             // Cirle back to 1 if hits U32::Max
             id = id.wrapping_add(1);
             if id == 0 {
@@ -66,18 +70,43 @@ impl ServerContext {
             }
         }
 
-        active_ids.insert(id);
+        active_player_ids.insert(id);
 
         // Store the next id for next user
-        self.next_id
+        self.next_user_id
             .store(id.wrapping_add(1), std::sync::atomic::Ordering::SeqCst);
         id
     }
 
     async fn free_player_id(&self, id: u32) {
-        let mut active_ids = self.active_ids.lock().await;
-        println!("ID: {} is freed", &id);
-        active_ids.remove(&id);
+        let mut active_player_ids = self.active_player_ids.lock().await;
+        println!("UserID: {} is freed", &id);
+        active_player_ids.remove(&id);
+    }
+
+    async fn assign_room_id(&self) -> u32 {
+        let mut active_room_id = self.active_room_ids.lock().await;
+        let mut id = self.next_room_id.load(std::sync::atomic::Ordering::SeqCst);
+
+        while active_room_id.contains(&id) {
+            id = id.wrapping_add(1);
+            if id == 0 {
+                id = 1;
+            }
+        }
+
+        active_room_id.insert(id);
+        self.next_room_id
+            .store(id.wrapping_add(1), std::sync::atomic::Ordering::SeqCst);
+
+        id
+    }
+
+    async fn free_room_id(&self, id: u32) {
+        let mut active_room_ids = self.active_room_ids.lock().await;
+
+        println!("RoomID: {} is freed", &id);
+        active_room_ids.remove(&id);
     }
 }
 
@@ -172,7 +201,7 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
         Ok(Message::Ping) => {
             let mut players = context.players.lock().await;
             if let Some(player) = players.get_mut(&client) {
-                player.last_active = Instant::now();
+                player.lock().await.last_active = Instant::now();
 
                 println!("Received PONG from {}", client);
             }
@@ -193,6 +222,46 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
             }
         }
 
+        Ok(Message::CreateRoom(room_name, password)) => {
+            let mut players = context.players.lock().await;
+            if let Some(player) = players.get(&client) {
+                let room_id = context.assign_room_id().await;
+                let mut rooms = context.rooms.lock().await;
+
+                // Create a new HashMap with the player
+                let mut room_players = HashMap::new();
+                room_players.insert(client, player.clone());
+
+                rooms.insert(
+                    room_id,
+                    Room::new(
+                        room_id,
+                        room_name.clone(),
+                        password.clone(),
+                        Mutex::new(room_players),
+                    ),
+                );
+
+                let mut response = vec![CREATE_ROOM];
+                let room_id_bytes = room_id.to_le_bytes();
+                response.extend_from_slice(&room_id_bytes);
+
+                context
+                    .server_socket
+                    .send_to(&response, client)
+                    .await
+                    .unwrap();
+                println!(
+                    "Created room {}: Name={}, Password={}",
+                    room_id, room_name, password
+                );
+            }
+        }
+
+        Err(e) => {
+            println!("Something went wrong: {:?}", e);
+        }
+
         _ => {
             println!("Not a command {}", String::from_utf8_lossy(&packet));
 
@@ -210,6 +279,8 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
     }
 }
 
+/////////////////////////////////////////////////////
+
 async fn accept_client(
     context: Arc<ServerContext>,
     client: SocketAddr,
@@ -219,11 +290,16 @@ async fn accept_client(
     let ack_msg: Vec<u8>;
 
     if let Some(existing_player) = players.get(&client) {
-        ack_msg = Message::Ack(existing_player.id).serialize();
+        ack_msg = Message::Ack(existing_player.lock().await.id).serialize();
     } else {
         let player_id = context.assign_player_id().await;
-        let new_player = Player::new(player_id);
-        println!("Player {}: {player_name} joined the server", &new_player.id);
+
+        let new_player = Arc::new(Mutex::new(Player::new(player_id)));
+
+        println!(
+            "Player {}: {player_name} joined the server",
+            new_player.lock().await.id
+        );
 
         players.insert(client, new_player);
         ack_msg = Message::Ack(player_id).serialize();
@@ -252,7 +328,7 @@ async fn drop_player(
             msg: Message::Leave(player_id).serialize(),
             excluded_client: Some(client),
         })?;
-        context.free_player_id(player.id).await;
+        context.free_player_id(player.lock().await.id).await;
     }
 
     Ok(())
@@ -286,8 +362,12 @@ async fn cleanup_inactive(context: Arc<ServerContext>) {
         let mut to_remove = Vec::new();
 
         for (addr, player) in players.iter() {
-            if Instant::now().duration_since(player.last_active) > inactivity_timeout {
-                println!("Removing inactive client: {} (ID: {})", addr, player.id);
+            if Instant::now().duration_since(player.lock().await.last_active) > inactivity_timeout {
+                println!(
+                    "Removing inactive client: {} (ID: {})",
+                    addr,
+                    player.lock().await.id
+                );
 
                 to_remove.push(*addr);
             }
@@ -295,7 +375,7 @@ async fn cleanup_inactive(context: Arc<ServerContext>) {
 
         for addr in to_remove {
             if let Some(player) = players.remove(&addr) {
-                context.free_player_id(player.id).await;
+                context.free_player_id(player.lock().await.id).await;
             }
         }
     }

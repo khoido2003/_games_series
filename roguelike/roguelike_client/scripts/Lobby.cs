@@ -16,7 +16,7 @@ public partial class Lobby : Control
     private Button _createConfirmBtn;
     private Label _createStatus;
 
-    private LineEdit _joinRoomNameInput;
+    private LineEdit _joinRoomIdInput;
     private LineEdit _joinPasswordInput;
     private Button _joinConfirmBtn;
     private Label _joinStatus;
@@ -42,7 +42,7 @@ public partial class Lobby : Control
         _createStatus = GetNode<Label>("CreateRoom/VBoxContainer/CreateStatus");
 
         // Join popup elements
-        _joinRoomNameInput = GetNode<LineEdit>("JoinRoom/VBoxContainer/RoomName");
+        _joinRoomIdInput = GetNode<LineEdit>("JoinRoom/VBoxContainer/RoomId");
         _joinPasswordInput = GetNode<LineEdit>("JoinRoom/VBoxContainer/Password");
         _joinConfirmBtn = GetNode<Button>("JoinRoom/VBoxContainer/Button");
         _joinStatus = GetNode<Label>("JoinRoom/VBoxContainer/JoinStatus");
@@ -73,7 +73,7 @@ public partial class Lobby : Control
     private void OnJoinRoomPressed()
     {
         GD.Print($"Join room pressed - popup {_joinRoomPopUp}");
-        _joinRoomNameInput.Text = "";
+        _joinRoomIdInput.Text = "";
         _joinPasswordInput.Text = "";
         _joinRoomPopUp.PopupCentered();
         _status.Text = "Enter room details to join...";
@@ -89,14 +89,14 @@ public partial class Lobby : Control
             return;
         }
         GD.Print($"Sending create room: {roomName}, Password: {password}");
-        /*NetworkManagement.Instance.CreateRoom(roomName, password);*/
+        NetworkManagement.Instance.CreateRoom(roomName, password);
         _status.Text = "Creating room...";
         _createRoomPopUp.Hide();
     }
 
     private void OnJoinConfirmPressed()
     {
-        string roomName = _joinRoomNameInput.Text.Trim();
+        string roomName = _joinRoomIdInput.Text.Trim();
         string password = _joinPasswordInput.Text.Trim();
         if (string.IsNullOrEmpty(roomName))
         {

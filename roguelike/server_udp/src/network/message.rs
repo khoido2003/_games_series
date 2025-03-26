@@ -1,12 +1,14 @@
-use std::{io, sync::atomic::AtomicBool};
+use std::{io, sync::atomic::AtomicBool, u16, usize};
 
 use cgmath::num_traits::ToBytes;
 
 use crate::{
-    config::globals::commands::{ACK, CREATE_ROOM, HANDSHAKE, LEAVE, PING, PLAYER_INPUT},
+    config::globals::commands::{
+        ACK, CREATE_ROOM, HANDSHAKE, JOIN_ROOM, LEAVE, PING, PLAYER_INPUT,
+    },
     game::{
         player::{PlayerID, PlayerName},
-        room::RoomId,
+        room::{RoomId, RoomName, RoomPass},
     },
 };
 
@@ -28,13 +30,13 @@ pub enum Message {
     Ack(PlayerID),
 
     /// Create new room/match
-    CreateRoom,
+    CreateRoom(RoomName, RoomPass),
 
     /// Leaves room/match
     Leave(PlayerID),
 
     /// Join room/match
-    JoinRoom(RoomId),
+    JoinRoom(RoomId, RoomPass),
     ///// Client sends input
     //PlayerInput(PlayerID, InputAction),
     //
@@ -71,11 +73,28 @@ impl Message {
                 packet
             }
 
-            Message::CreateRoom => vec![CREATE_ROOM],
-            Message::JoinRoom(room_id) => {
-                let mut packet = vec![PLAYER_INPUT];
-                packet.extend_from_slice(&room_id.to_le_bytes());
+            Message::CreateRoom(room_name, password) => {
+                let mut packet = vec![CREATE_ROOM];
+                let name_bytes = room_name.as_bytes();
+                let pass_bytes = password.as_bytes();
+
+                packet.extend_from_slice(&(name_bytes.len() as u16).to_le_bytes());
+                packet.extend_from_slice(name_bytes);
+                packet.extend_from_slice(&(pass_bytes.len()).to_le_bytes());
+                packet.extend_from_slice(pass_bytes);
+
                 packet
+            }
+            Message::JoinRoom(room_id, password) => {
+                let mut packet = vec![JOIN_ROOM];
+                packet.extend_from_slice(&room_id.to_le_bytes());
+                let pass_bytes = password.as_bytes();
+                packet.extend_from_slice(&(pass_bytes.len() as u16).to_le_bytes());
+                packet.extend_from_slice(pass_bytes);
+                packet
+            }
+            _ => {
+                vec![]
             }
         }
     }
@@ -116,6 +135,47 @@ impl Message {
                 let player_id = u32::from_le_bytes([packet[1], packet[2], packet[3], packet[4]]);
 
                 Ok(Message::Leave(player_id))
+            }
+
+            CREATE_ROOM if packet.len() > 5 => {
+                let room_name_len = u16::from_le_bytes([packet[1], packet[2]]) as usize;
+                if packet.len() < 3 + room_name_len + 2 {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Packet too short",
+                    ));
+                }
+
+                let room_name = String::from_utf8(packet[3..3 + room_name_len].to_vec())
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+                let pass_offset = 3 + room_name_len;
+                let pass_len =
+                    u16::from_le_bytes([packet[pass_offset], packet[pass_offset + 1]]) as usize;
+                let pass =
+                    String::from_utf8(packet[pass_offset + 2..pass_offset + pass_len + 2].to_vec())
+                        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+                Ok(Message::CreateRoom(room_name, pass))
+            }
+
+            JOIN_ROOM if packet.len() >= 7 => {
+                let room_id = u32::from_le_bytes(packet[1..5].try_into().map_err(|_| {
+                    io::Error::new(io::ErrorKind::InvalidData, "Packet must be 4 bytes")
+                })?);
+
+                let pass_len = u16::from_le_bytes([packet[5], packet[6]]) as usize;
+                if packet.len() < 7 + pass_len {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Packet too short for JOIN_ROOM",
+                    ));
+                }
+
+                let password = String::from_utf8(packet[7..7 + pass_len].to_vec())
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+                Ok(Message::JoinRoom(room_id, password))
             }
 
             _ => Err(io::Error::new(

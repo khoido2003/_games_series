@@ -17,12 +17,15 @@ public partial class ClientStateManager : Node
         GD.Print("ClientStateManagemer init!");
     }
 
-    public void UpdateConnectionStatus(bool connected, int playerId, string username) {
-        if (connected) {
+    public void UpdateConnectionStatus(bool connected, int playerId, string username)
+    {
+        if (connected)
+        {
             LocalPlayer = new Player(playerId, username);
             GD.Print($"LocalPlayer Created: {username} (ID: {playerId})");
-
-        } else  {
+        }
+        else
+        {
             LocalPlayer = null;
             CurrentRoom = null;
             AvailableRooms.Clear();
@@ -30,5 +33,10 @@ public partial class ClientStateManager : Node
             _lastProcessedSequence = -1;
             GD.Print("Disconnected, clear state");
         }
+    }
+
+    public void SetCurrentRoom(int roomId)
+    {
+        CurrentRoom.RommId = roomId;
     }
 }
