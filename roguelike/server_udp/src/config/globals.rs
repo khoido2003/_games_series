@@ -8,6 +8,7 @@ pub mod commands {
     pub const JOIN_ROOM: u8 = 6;
     pub const PLAYER_INPUT: u8 = 7;
     pub const ROOM_SNAPSHOT: u8 = 8;
+    pub const ERROR: u8 = 9;
 }
 
 pub const DEFAULT_PORT: u16 = 5678;

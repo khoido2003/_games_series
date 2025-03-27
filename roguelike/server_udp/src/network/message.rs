@@ -3,8 +3,9 @@ use std::{io, sync::atomic::AtomicBool, u16, usize};
 use cgmath::num_traits::ToBytes;
 
 use crate::{
-    config::globals::commands::{
-        ACK, CREATE_ROOM, HANDSHAKE, JOIN_ROOM, LEAVE, PING, PLAYER_INPUT,
+    config::globals::{
+        self,
+        commands::{ACK, CREATE_ROOM, ERROR, HANDSHAKE, JOIN_ROOM, LEAVE, PING},
     },
     game::{
         player::{PlayerID, PlayerName},
@@ -20,6 +21,8 @@ pub enum InputAction {
 
 #[derive(Debug, PartialEq)]
 pub enum Message {
+    Error(String),
+
     /// Client/Server healthcheck
     Ping,
 
@@ -47,6 +50,17 @@ pub enum Message {
 impl Message {
     pub fn serialize(&self) -> Vec<u8> {
         match self {
+            Message::Error(error_msg) => {
+                let mut packet = vec![globals::commands::ERROR];
+                let error_bytes = error_msg.as_bytes();
+
+                let length = error_bytes.len() as u16;
+                packet.extend_from_slice(&length.to_le_bytes());
+                packet.extend_from_slice(error_bytes);
+
+                packet
+            }
+
             Message::Ping => vec![PING],
             Message::Handshake(player_name) => {
                 let mut packet = vec![HANDSHAKE];
@@ -106,6 +120,21 @@ impl Message {
 
         println!("Deserializing packet: {:?}", packet);
         match packet[0] {
+            ERROR if packet.len() >= 3 => {
+                let length = u16::from_le_bytes([packet[1], packet[2]]) as usize;
+
+                if packet.len() < 3 + length {
+                    return Err(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Error message too short",
+                    ));
+                }
+                let error_msg = String::from_utf8(packet[3..3 + length].to_vec())
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+
+                Ok(Message::Error(error_msg))
+            }
+
             PING => Ok(Message::Ping),
 
             HANDSHAKE if packet.len() >= 3 => {

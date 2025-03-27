@@ -198,6 +198,13 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
     println!("Command received: {} (0x{:02x})", command, command);
 
     match Message::deserialize(&packet) {
+        Ok(Message::Error(msg)) => {
+            println!(
+                "Received unexpected error message from client {}: {}",
+                &client, msg
+            );
+        }
+
         Ok(Message::Ping) => {
             let mut players = context.players.lock().await;
             if let Some(player) = players.get_mut(&client) {
@@ -213,17 +220,22 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
                     "Failed to accept client {}: {}: {}",
                     client, &player_name, e
                 );
+
+                send_error_msg("Handshake message failed ", e, context.clone(), &client).await;
             }
         }
+
         Ok(Message::Leave(player_id)) => {
             println!("Drop player {}", player_id);
             if let Err(e) = drop_player(context.clone(), client, player_id).await {
                 eprintln!("Failed to drop player {} from {}: {}", player_id, client, e);
+
+                send_error_msg("LEAVE message failed", e, context.clone(), &client).await;
             }
         }
 
         Ok(Message::CreateRoom(room_name, password)) => {
-            let mut players = context.players.lock().await;
+            let players = context.players.lock().await;
             if let Some(player) = players.get(&client) {
                 let room_id = context.assign_room_id().await;
                 let mut rooms = context.rooms.lock().await;
@@ -246,15 +258,81 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
                 let room_id_bytes = room_id.to_le_bytes();
                 response.extend_from_slice(&room_id_bytes);
 
-                context
-                    .server_socket
-                    .send_to(&response, client)
-                    .await
-                    .unwrap();
+                if let Err(e) = context.server_socket.send_to(&response, client).await {
+                    send_error_msg(
+                        "Failed to send CREATE_ROOM response",
+                        Box::new(e),
+                        context.clone(),
+                        &client,
+                    )
+                    .await;
+                } else {
+                    println!("Sent CREATE_ROOM message to {}", client);
+                }
                 println!(
                     "Created room {}: Name={}, Password={}",
                     room_id, room_name, password
                 );
+            } else {
+                let error = Box::new(std::io::Error::new(
+                    std::io::ErrorKind::NotFound,
+                    "Client not registered",
+                )) as Box<dyn Error + Send + Sync>;
+                send_error_msg("Create room failed", error, context.clone(), &client).await;
+            }
+        }
+
+        Ok(Message::JoinRoom(room_id, password)) => {
+            let players = context.players.lock().await;
+
+            if let Some(player) = players.get(&client) {
+                let rooms = context.rooms.lock().await;
+
+                if let Some(room) = rooms.get(&room_id) {
+                    if room.room_pass == password {
+                        let mut room_players = room.players.lock().await;
+
+                        room_players.insert(client, player.clone());
+
+                        let mut response = vec![globals::commands::JOIN_ROOM];
+
+                        let room_name_bytes = &room.room_name.as_bytes();
+
+                        let room_name_bytes_len = room_name_bytes.len() as u32;
+                        response.extend_from_slice(&room_name_bytes_len.to_le_bytes());
+                        response.extend_from_slice(room_name_bytes);
+
+                        if let Err(e) = context.server_socket.send_to(&response, client).await {
+                            eprintln!(
+                                "Cannot add player {} to room {}: {}",
+                                player.lock().await.id,
+                                room.id,
+                                e
+                            );
+                            send_error_msg(
+                                "Failed to send JOIN_ROOM response",
+                                Box::new(e),
+                                context.clone(),
+                                &client,
+                            )
+                            .await;
+                        } else {
+                            println!("Player {} joined room {}", player.lock().await.id, room.id);
+                        }
+                    } else {
+                        let error = Box::new(std::io::Error::new(
+                            std::io::ErrorKind::InvalidInput,
+                            "Incorrect password",
+                        )) as Box<dyn Error + Send + Sync>;
+                        send_error_msg("Join room failed", error, context.clone(), &client).await;
+                    }
+                } else {
+                    let error = Box::new(std::io::Error::new(
+                        std::io::ErrorKind::NotFound,
+                        "Room not existed",
+                    )) as Box<dyn Error + Send + Sync>;
+                    send_error_msg("Join room failed", error, context.clone(), &client).await;
+                }
             }
         }
 
@@ -281,6 +359,31 @@ async fn process_client_message(context: Arc<ServerContext>, client: SocketAddr,
 
 /////////////////////////////////////////////////////
 
+// Send message error to client
+async fn send_error_msg(
+    msg: &str,
+    e: Box<dyn Error + Send + Sync>,
+    context: Arc<ServerContext>,
+    client: &SocketAddr,
+) {
+    let error_msg = Message::Error(format!("{msg}: {e}"));
+
+    match context
+        .server_socket
+        .send_to(&error_msg.serialize(), client)
+        .await
+    {
+        Ok(_) => {
+            println!("Send error message to client");
+        }
+
+        Err(e) => {
+            eprintln!("Can not send error message to player: {e}")
+        }
+    }
+}
+
+// Accept new player
 async fn accept_client(
     context: Arc<ServerContext>,
     client: SocketAddr,
@@ -314,6 +417,7 @@ async fn accept_client(
     Ok(())
 }
 
+// Remove player
 async fn drop_player(
     context: Arc<ServerContext>,
     client: SocketAddr,

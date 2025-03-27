@@ -45,8 +45,8 @@ public partial class NetworkManagement : Node
         SendHandshake(username);
     }
 
-    /////////////////////////////////////////////////////////
-    ///////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////
 
     // ------ Action Method -------
@@ -112,20 +112,15 @@ public partial class NetworkManagement : Node
 
     public void JoinRoom(int roomId, string password)
     {
-        byte[] idBytes = BitConverter.GetBytes(roomId);
+        byte[] idBytes = BitConverter.GetBytes(roomId); // 4 bytes
         byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
 
-        byte[] msg = new byte[5 + idBytes.Length + passwordBytes.Length];
+        byte[] msg = new byte[1 + 4 + 2 + passwordBytes.Length];
         msg[0] = (byte)Global.JOIN_ROOM;
 
-        // Put the name bytes length to the index 1 and the rest of the names from index 3
-        BitConverter.GetBytes((ushort)idBytes.Length).CopyTo(msg, 1);
-        Array.Copy(idBytes, 0, msg, 3, idBytes.Length);
-
-        // Put the password bytes length to the index 3
-        BitConverter.GetBytes((ushort)passwordBytes.Length).CopyTo(msg, 3 + idBytes.Length);
-        Array.Copy(passwordBytes, 0, msg, 3 + idBytes.Length + 2, passwordBytes.Length);
-
+        Array.Copy(idBytes, 0, msg, 1, idBytes.Length);
+        BitConverter.GetBytes((ushort)passwordBytes.Length).CopyTo(msg, 5);
+        Array.Copy(passwordBytes, 0, msg, 7, passwordBytes.Length);
         _networkClient.SendPacket(msg);
         GD.Print($"Send JOIN_ROOM: ID={roomId}, password={password}, packet length={msg.Length}");
     }

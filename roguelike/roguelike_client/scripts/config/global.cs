@@ -9,4 +9,5 @@ public enum Global : byte
     JOIN_ROOM = 6,
     PLAYER_INPUT = 7,
     ROOM_SNAPSHOT = 8,
+    ERROR = 9,
 }

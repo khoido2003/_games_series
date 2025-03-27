@@ -36,6 +36,29 @@ public partial class NetworkClient : Node
             // Read the message sent back from the server then send PING back to the server to make sure the server does not remove this client from the server
             switch ((Global)packet[0])
             {
+                case Global.ERROR:
+
+                    if (packet.Length >= 3)
+                    {
+                        int errorLength = BitConverter.ToInt16(packet, 1);
+
+                        if (packet.Length >= 3 + errorLength)
+                        {
+                            string errorMsg = Encoding.UTF8.GetString(packet, 3, errorLength);
+
+                            GD.PrintErr($"Server Error: {errorMsg}");
+                        }
+                        else
+                        {
+                            GD.PrintErr($"ERROR packet too short for message {packet.Length}");
+                        }
+                    }
+                    else
+                    {
+                        GD.PrintErr($"Error packet too short: {packet.Length}");
+                    }
+                    break;
+
                 case Global.PING:
                     GD.Print("Received PING from the server");
 
@@ -72,6 +95,23 @@ public partial class NetworkClient : Node
                     {
                         int roomId = BitConverter.ToInt32(packet, 1);
                         GD.Print($"RoomId {roomId} created");
+                    }
+                    break;
+
+                case Global.JOIN_ROOM:
+                    if (packet.Length >= 3)
+                    {
+                        try
+                        {
+                            int nameLength = BitConverter.ToInt32(packet, 1);
+                            string roomName = Encoding.UTF8.GetString(packet, 5, nameLength);
+
+                            GD.Print($"Successfulled joined room: {roomName}");
+                        }
+                        catch (Exception e)
+                        {
+                            GD.PrintErr($"Error processing JOIN_ROOM response: {e}");
+                        }
                     }
                     break;
 

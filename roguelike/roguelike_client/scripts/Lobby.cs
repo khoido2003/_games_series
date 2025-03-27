@@ -96,17 +96,21 @@ public partial class Lobby : Control
 
     private void OnJoinConfirmPressed()
     {
-        string roomName = _joinRoomIdInput.Text.Trim();
+        string roomIdStr = _joinRoomIdInput.Text.Trim();
         string password = _joinPasswordInput.Text.Trim();
-        if (string.IsNullOrEmpty(roomName))
+        if (String.IsNullOrEmpty(roomIdStr))
         {
-            _joinStatus.Text = "Status: room's name can not be empty";
+            _joinStatus.Text = "Status: room's id can not be empty";
             return;
         }
-        GD.Print($"Sending join room: {roomName}, Password: {password}");
-        /*NetworkManagement.Instance.JoinRoom(roomName, password);*/
-        _status.Text = "Joining room...";
-        _joinRoomPopUp.Hide();
+        else
+        {
+            int roomId = roomIdStr.ToInt();
+            GD.Print($"Sending join room: {roomId}, Password: {password}");
+            NetworkManagement.Instance.JoinRoom(roomId, password);
+            _status.Text = "Joining room...";
+            _joinRoomPopUp.Hide();
+        }
     }
 
     private void OnCreatePopupClosed()
