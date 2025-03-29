@@ -1,0 +1,77 @@
+[gd_scene load_steps=7 format=3 uid="uid://xr7esqtulr20"]
+
+[ext_resource type="Script" path="res://World.cs" id="1_r152c"]
+[ext_resource type="PackedScene" uid="uid://cbi34eocuak7v" path="res://environment.tscn" id="1_s0aey"]
+[ext_resource type="PackedScene" uid="uid://cl1a324utvsth" path="res://player.tscn" id="2_wa4kn"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_y6ctl"]
+sky_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+ground_horizon_color = Color(0.64625, 0.65575, 0.67075, 1)
+
+[sub_resource type="Sky" id="Sky_pawsu"]
+sky_material = SubResource("ProceduralSkyMaterial_y6ctl")
+
+[sub_resource type="Environment" id="Environment_npved"]
+background_mode = 2
+sky = SubResource("Sky_pawsu")
+tonemap_mode = 2
+glow_enabled = true
+
+[node name="World" type="Node"]
+script = ExtResource("1_r152c")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="MainMenu" type="PanelContainer" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 367.0
+offset_top = 172.0
+offset_right = -267.0
+offset_bottom = -241.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/MainMenu"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/MainMenu/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Label" type="Label" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Main Menu"
+horizontal_alignment = 1
+
+[node name="HostButton" type="Button" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Host"
+
+[node name="JoinButton" type="Button" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Join"
+
+[node name="AddressEntry" type="LineEdit" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Address entry"
+alignment = 1
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(-0.866025, -0.433013, 0.25, 0, 0.5, 0.866025, -0.5, 0.75, -0.433013, 0, 0, 0)
+shadow_enabled = true
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_npved")
+
+[node name="Environment" parent="." instance=ExtResource("1_s0aey")]
+
+[node name="Player" parent="." instance=ExtResource("2_wa4kn")]
+
+[connection signal="pressed" from="CanvasLayer/MainMenu/MarginContainer/VBoxContainer/HostButton" to="." method="OnHostButtonPress"]
+[connection signal="pressed" from="CanvasLayer/MainMenu/MarginContainer/VBoxContainer/JoinButton" to="." method="OnJoinButtonPressed"]

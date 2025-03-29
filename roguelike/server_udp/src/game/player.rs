@@ -1,16 +1,17 @@
 use std::time::Instant;
 
-use cgmath::Vector2;
+use super::Position;
 
 pub type PlayerID = u32;
 pub type PlayerName = String;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug)]
 pub struct Player {
     pub player_name: PlayerName,
     pub id: PlayerID,
-    pub pos: Vector2<f32>,
-    pub velocity: Vector2<f32>,
+    pub position: Position,
+    pub velocity: Position,
+    pub health: i32,
     pub last_active: Instant,
 }
 
@@ -19,8 +20,9 @@ impl Default for Player {
         Self {
             player_name: String::new(),
             id: 0,
-            pos: Vector2::new(0.0, 0.0),
-            velocity: Vector2::new(0.0, 0.0),
+            position: Position { x: 0.0, y: 0.0 },
+            velocity: Position { x: 0.0, y: 0.0 },
+            health: 100,
             last_active: Instant::now(),
         }
     }

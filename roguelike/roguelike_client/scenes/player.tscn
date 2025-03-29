@@ -1,0 +1,39 @@
+[gd_scene load_steps=6 format=3 uid="uid://bmtxiv043un3e"]
+
+[ext_resource type="Texture2D" uid="uid://tc1p3mkwob2y" path="res://assets/8bit/Tilemap/tilemap.png" id="1_7v1nd"]
+[ext_resource type="Script" path="res://scripts/Player.cs" id="1_m2cli"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_vlmm5"]
+size = Vector2(18, 20)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_wutcm"]
+atlas = ExtResource("1_7v1nd")
+region = Rect2(0, 63, 9, 9)
+
+[sub_resource type="SpriteFrames" id="SpriteFrames_sr2ke"]
+animations = [{
+"frames": [{
+"duration": 1.0,
+"texture": SubResource("AtlasTexture_wutcm")
+}],
+"loop": true,
+"name": &"default",
+"speed": 5.0
+}]
+
+[node name="Player" type="CharacterBody2D"]
+script = ExtResource("1_m2cli")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+position = Vector2(-1, -1)
+shape = SubResource("RectangleShape2D_vlmm5")
+
+[node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="."]
+scale = Vector2(2.93056, 2.61111)
+sprite_frames = SubResource("SpriteFrames_sr2ke")
+autoplay = "default"
+frame_progress = 0.572326
+
+[node name="Camera2D" type="Camera2D" parent="."]
+zoom = Vector2(2, 2)
+position_smoothing_enabled = true

@@ -1,0 +1,17 @@
+[gd_scene load_steps=4 format=3 uid="uid://cbi34eocuak7v"]
+
+[ext_resource type="PackedScene" uid="uid://cvrmfhx4k1ob1" path="res://Environment.blend" id="1_eabis"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_b3ndi"]
+albedo_color = Color(0.414191, 0.482205, 0.394973, 1)
+uv1_triplanar = true
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_5ehgd"]
+albedo_color = Color(0.379043, 0.668682, 0.371928, 1)
+uv1_triplanar = true
+
+[node name="Environment" instance=ExtResource("1_eabis")]
+
+[node name="Plane" parent="." index="0"]
+surface_material_override/0 = SubResource("StandardMaterial3D_b3ndi")
+surface_material_override/1 = SubResource("StandardMaterial3D_5ehgd")

@@ -6,9 +6,7 @@ public partial class ClientStateManager : Node
     public static ClientStateManager Instance { get; private set; }
     public Player LocalPlayer { get; private set; }
     public Room CurrentRoom { get; private set; }
-    public Dictionary<int, Room> AvailableRooms { get; private set; } = new Dictionary<int, Room>();
 
-    private List<InputAction> _inputHistory = new List<InputAction>();
     private int _lastProcessedSequence = -1;
 
     public override void _Ready()
@@ -28,15 +26,32 @@ public partial class ClientStateManager : Node
         {
             LocalPlayer = null;
             CurrentRoom = null;
-            AvailableRooms.Clear();
-            _inputHistory.Clear();
             _lastProcessedSequence = -1;
             GD.Print("Disconnected, clear state");
+        }
+    }
+
+    public void AddPlayerToCurrentRoom(int playerId, string username)
+    {
+        if (CurrentRoom != null && !CurrentRoom.Players.ContainsKey(playerId))
+        {
+            var player = new Player(playerId, username);
+            CurrentRoom.AddPlayer(player);
+            GD.Print($"Added player {username} (ID: {playerId}) to room {CurrentRoom.RommId}");
         }
     }
 
     public void SetCurrentRoom(int roomId)
     {
         CurrentRoom.RommId = roomId;
+    }
+
+    public void RemovePlayerFromCurrentRoom(int playerId)
+    {
+        if (CurrentRoom != null)
+        {
+            CurrentRoom.RemovePlayer(playerId);
+            GD.Print($"Removed player ID: {playerId} from room {CurrentRoom.RommId}");
+        }
     }
 }

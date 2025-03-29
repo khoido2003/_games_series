@@ -1,4 +1,4 @@
-use std::{ error::Error};
+use std::error::Error;
 
 use clap::Parser;
 use config::globals;
@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                         }
                     }
                     Err(e) => {
-                        eprintln!("Server failed to start: {}", e);
+                        eprintln!("Server failed to start: {:?}", e);
                         std::process::exit(1);
                     }
                 }

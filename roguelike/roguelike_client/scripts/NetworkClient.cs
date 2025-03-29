@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.Text;
 using Godot;
 
 public partial class NetworkClient : Node
 {
+    ////////////////////////////////////////////////////////
+
     public delegate void PacketHandler(byte[] packet);
     public event PacketHandler OnPacketReceived;
 
@@ -95,6 +98,8 @@ public partial class NetworkClient : Node
                     {
                         int roomId = BitConverter.ToInt32(packet, 1);
                         GD.Print($"RoomId {roomId} created");
+
+                        GetTree().ChangeSceneToFile("res://scenes/room.tscn");
                     }
                     break;
 
@@ -126,7 +131,14 @@ public partial class NetworkClient : Node
 
     public void SendPacket(byte[] packet)
     {
-        _udp.PutPacket(packet);
+        try
+        {
+            _udp.PutPacket(packet);
+        }
+        catch (Exception e)
+        {
+            GD.PrintErr($"Error sending packet {e}");
+        }
     }
 
     public void CloseUdp()
